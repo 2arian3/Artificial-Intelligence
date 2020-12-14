@@ -9,6 +9,13 @@ class Card:
     def __repr__(self):
         return 'Number : ' + str(self.number) + '\n' + 'Color : ' + self.color
 
+    def compare(self, card):
+        if self.color == card.color:
+            if self.number > card.number:
+                return 1
+            return 0
+        return -1
+
 class Column :
 
     def __init__(self):
@@ -23,6 +30,9 @@ class Column :
     def removeCardFromTop(self):
         return self.state.pop()
 
+    def checkValidation(self):
+        return all([self.state[i].compare(self.state[i+1]) == 1 for i in range(len(self.state)-1)])
+        
 columns = []
 
 #Reading inputs from input.txt
