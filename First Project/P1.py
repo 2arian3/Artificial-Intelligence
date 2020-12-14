@@ -24,14 +24,14 @@ class Column :
         return self.state.pop()
 
 columns = []
+
+#Reading inputs from input.txt
 with open('input.txt', 'r') as src:
     numberOfColumns, colors, numbers = map(int, src.readline().split(' '))
-    for _ in range(numberOfColumns): 
-        columns.append(Column())
-        line = src.readline().rstrip()
-        if line != '#':
-            for card in line.split(' '):
+    columns = [Column() for _ in range(numberOfColumns)]
+    lines = [src.readline().rstrip() for _ in range(numberOfColumns)]
+    for i in range(numberOfColumns):
+        if lines[i] is not '#':
+            for card in lines[i].split(' '):
                 number, color = map(str, re.split('(\d+)', card)[1:])
-                columns[-1].putCardOnTop(Card(int(number), color))
-
-print(columns[0])
+                columns[i].putCardOnTop(Card(int(number), color))
