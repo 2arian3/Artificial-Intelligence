@@ -65,11 +65,11 @@ class State:
     def __eq__(self, state):
         return len(self.columns) == len(state.columns) and all([self.columns[i] == state.columns[i] for i in range(len(self.columns))])
         
-def checkTermination(state):
-    return all([column.checkValidation() for column in state.columns])
+    def checkTermination(self):
+        return all([column.checkValidation() for column in self.columns])
 
-def BreadthFirstSearch():
-    if checkTermination(): return True
+def BreadthFirstSearch(initialState):
+    if initialState.checkTermination(): return True
 
 initialState = State()
 
