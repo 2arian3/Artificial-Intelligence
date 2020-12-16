@@ -1,3 +1,4 @@
+import re
 import copy
 from enum import Enum
 
@@ -93,3 +94,23 @@ class Node:
 
     def __eq__(self, node):
         return self.state == node.state
+
+def readInputs(fileName):
+    initialState = State()
+
+    #Reading inputs from input.txt
+    with open(fileName, 'r') as src:
+        numberOfColumns, colors, numbers = map(int, src.readline().split(' '))
+        initialState.columns = [Column() for _ in range(numberOfColumns)]
+        for i in range(numberOfColumns):
+            line = src.readline().rstrip()
+            if line is not '#':
+                for card in line.split(' '):
+                    number, color = map(str, re.split('(\d+)', card)[1:])
+                    initialState.columns[i].putCardOnTop(Card(int(number), color))
+    return {
+        "Columns": numberOfColumns,
+        "Colors": colors,
+        "Numbers": numbers,
+        "Initial state": initialState
+    }
