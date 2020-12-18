@@ -22,7 +22,7 @@ class Card:
         return str(self.number) + self.color
 
     def __eq__(self, card):
-        return self.number == card.number and self.color == card.color
+        return type(card) == type(self) and self.number == card.number and self.color == card.color
 
     def compare(self, card):
         if self.color == card.color:
@@ -43,11 +43,10 @@ class Column :
         return str(self.cards)
     
     def __eq__(self, column):
-        return len(self.cards) == len(column.cards) and all([self.cards[i] == column.cards[i] for i in range(len(self.cards))])
+        return type(column) == type(self) and self.cards == column.cards
 
     def checkAvailability(self, card):
-        if self.cards: return self.cards[-1].compare(card) == cardComparisons.SameColorSmallerNumber or self.cards[-1].compare(card) == cardComparisons.DifferentColorSmallerNumber
-        return True
+        return not self.cards or self.cards[-1].compare(card) == cardComparisons.SameColorSmallerNumber or self.cards[-1].compare(card) == cardComparisons.DifferentColorSmallerNumber
 
     def putCardOnTop(self, card):
         self.cards.append(card)
@@ -56,7 +55,7 @@ class Column :
         return self.cards.pop()
 
     def checkValidation(self):
-        return all([self.cards[i].compare(self.cards[i+1]) == cardComparisons.SameColorSmallerNumber for i in range(len(self.cards)-1)])
+        return not any([self.cards[i].compare(self.cards[i+1]) != cardComparisons.SameColorSmallerNumber for i in range(len(self.cards)-1)])
 
 class State:
 
@@ -67,11 +66,11 @@ class State:
         return self.columns
 
     def __eq__(self, state):
-        return len(self.columns) == len(state.columns) and all([self.columns[i] == state.columns[i] for i in range(len(self.columns))])
+        return type(state) == type(self) and self.columns == state.columns
 
     #checks whether the current state is a goal state or not
     def checkTermination(self):
-        return all([column.checkValidation() for column in self.columns])
+        return not any([column.checkValidation() == False for column in self.columns])
     
     def validActions(self):
         actions = []
@@ -85,15 +84,22 @@ class State:
 
 class Node:
 
-    def __init__(self, state=None, parent=None, actions=[]):
+    def __init__(self, state=None, parent=None, actions=[], depth=0):
         self.state = state
         self.parent = parent
         self.childs = []
         #stores the actions that has been done from the root to current node
         self.actions = copy.deepcopy(actions)
+        self.depth = depth
 
     def __eq__(self, node):
-        return self.state == node.state
+        return type(node) == type(self) and self.state == node.state
+    
+    def __str__(self):
+        pass
+
+    def __repr__(self):
+        pass
 
 def readInputs(fileName):
     initialState = State()
