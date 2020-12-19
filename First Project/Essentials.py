@@ -1,6 +1,7 @@
 import re
-import copy
+from copy import deepcopy
 from enum import Enum
+from typing import List
 
 cardComparisons = Enum('Comparison', [
     'SameColorBiggerNumber',
@@ -36,10 +37,13 @@ class Card:
 
 class Column :
 
-    def __init__(self, cards=[]):
-        self.cards = copy.deepcopy(cards)
+    def __init__(self, cards:List[Card] = []):
+        self.cards = deepcopy(cards)
 
     def __repr__(self):
+        return str(self.cards)
+
+    def __str__(self):
         return str(self.cards)
     
     def __eq__(self, column):
@@ -59,11 +63,8 @@ class Column :
 
 class State:
 
-    def __init__(self, columns=[]):
-        self.columns = copy.deepcopy(columns)
-    
-    def __repr__(self):
-        return self.columns
+    def __init__(self, columns:List[Column] = []):
+        self.columns = deepcopy(columns)
 
     def __eq__(self, state):
         return type(state) == type(self) and self.columns == state.columns
@@ -87,36 +88,48 @@ class Node:
     def __init__(self, state=None, parent=None, actions=[], depth=0):
         self.state = state
         self.parent = parent
-        self.childs = []
         #stores the actions that has been done from the root to current node
-        self.actions = copy.deepcopy(actions)
+        self.actions = deepcopy(actions)
         self.depth = depth
 
     def __eq__(self, node):
         return type(node) == type(self) and self.state == node.state
+
+    def __hash__(self):
+        return hash(self.state.columns.__str__())
     
-    def __str__(self):
-        pass
+def readInputs(fileName=None):
+    initialState, read, inputFile = State(), input, None
+    if fileName: 
+        inputFile = open(fileName, 'r')
+        read = inputFile.readline
+    #Reading inputs possible from both terminal or text file
 
-    def __repr__(self):
-        pass
-
-def readInputs(fileName):
-    initialState = State()
-
-    #Reading inputs from input.txt
-    with open(fileName, 'r') as src:
-        numberOfColumns, colors, numbers = map(int, src.readline().split(' '))
-        initialState.columns = [Column() for _ in range(numberOfColumns)]
-        for i in range(numberOfColumns):
-            line = src.readline().rstrip()
-            if line is not '#':
-                for card in line.split(' '):
-                    number, color = map(str, re.split('(\d+)', card)[1:])
-                    initialState.columns[i].putCardOnTop(Card(int(number), color))
+    numberOfColumns, colors, numbers = map(int, read().split(' '))
+    initialState.columns = [Column() for _ in range(numberOfColumns)]
+    for i in range(numberOfColumns):
+        line = read().rstrip()
+        if line != '#':
+            for card in line.split(' '):
+                number, color = map(str, re.split('(\d+)', card)[1:])
+                initialState.columns[i].putCardOnTop(Card(int(number), color))
+    
+    if inputFile: inputFile.close()
     return {
         "Columns": numberOfColumns,
         "Colors": colors,
         "Numbers": numbers,
         "Initial state": initialState
     }
+
+def showResults(goalNode, initialState, totalCreatedNodes, totalExploredNodes):
+    print('***RESULTS***')
+    print('Total created nodes: ', totalCreatedNodes)
+    print('Total explored nodes: ', totalExploredNodes)
+    print('Goal state depth: ', goalNode.depth, '\n')
+    print('***STATES***')
+    print('Initial state: ', initialState.columns)
+    print('Final state: ', goalNode.state.columns, '\n')
+    print('***Actions***')
+    for card, fromColumn, toColumn in goalNode.actions:
+        print('Moved card {} from columns {} to column {}'.format(card, fromColumn+1, toColumn+1))
