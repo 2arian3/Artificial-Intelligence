@@ -1,7 +1,7 @@
 import re
 from copy import deepcopy
 from enum import Enum
-from typing import List
+from typing import *
 
 cardComparisons = Enum('Comparison', [
     'SameColorBiggerNumber',
@@ -37,7 +37,7 @@ class Card:
 
 class Column :
 
-    def __init__(self, cards:List[Card] = []):
+    def __init__(self, cards: List[Card] = []):
         self.cards = deepcopy(cards)
 
     def __repr__(self):
@@ -63,7 +63,7 @@ class Column :
 
 class State:
 
-    def __init__(self, columns:List[Column] = []):
+    def __init__(self, columns: List[Column] = []):
         self.columns = deepcopy(columns)
 
     def __eq__(self, state):
@@ -85,9 +85,8 @@ class State:
 
 class Node:
 
-    def __init__(self, state=None, parent=None, actions=[], depth=0):
+    def __init__(self, state: State=None, actions=[], depth=0):
         self.state = state
-        self.parent = parent
         #stores the actions that has been done from the root to current node
         self.actions = deepcopy(actions)
         self.depth = depth
@@ -97,6 +96,22 @@ class Node:
 
     def __hash__(self):
         return hash(self.state.columns.__str__())
+
+    def heuristic(self):
+        h1, h2 = 0, 0
+        for column in self.state.columns:
+            if column.cards:
+                for card in column.cards:
+                    if card != column.cards[0] and card.number >= column.cards[0].number:
+                        h1 += len(column.cards) - column.cards.index(card)
+                        break
+        for column in self.state.columns:
+            if column.cards:
+                for card in column.cards:
+                    if card.color != column.cards[0].color:
+                        h1 += len(column.cards) - column.cards.index(card)
+                        break
+        return max(h1, h2)
     
 def readInputs(fileName=None):
     initialState, read, inputFile = State(), input, None
