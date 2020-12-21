@@ -1,7 +1,7 @@
 from Essentials import *
 from queue import PriorityQueue
 
-totalExploredNodes = 1
+totalExploredNodes = 0
 totalCreatedNodes = 1
 
 def AStar(initialNode: Node):
@@ -17,14 +17,14 @@ def AStar(initialNode: Node):
         currentState: State = currentNode.state
         currentActions: List = currentNode.actions
         childDepth = currentNode.depth + 1
+        totalExploredNodes += 1
 
         if currentState.checkTermination(): return currentNode
-        totalExploredNodes += 1
 
         for action in currentState.validActions():
             childNode = child(action, deepcopy(currentState), currentActions, childDepth)
             childCost = costs[currentNode] + 1
-            
+
             if childNode not in costs or childCost < costs[childNode]:
                 costs[childNode] = childCost
                 priority = childCost + childNode.heuristic()
@@ -35,7 +35,7 @@ def AStar(initialNode: Node):
 
 def main():
     #could be used to read input from a text file => inputs = readInputs('input.txt')
-    #in the case below it reads the inputs from terminal
+    #in the case below it reads the inputs from text file
     inputs = readInputs('input.txt')
     initialState = inputs['Initial state']
     result = AStar(Node(initialState))

@@ -33,7 +33,7 @@ def IterativeDeepeningSearch(initialNode, limit):
 
 def main():
     #could be used to read input from a text file => inputs = readInputs('input.txt')
-    #in the case below it reads the inputs from terminal
+    #in the case below it reads the inputs from text file
     inputs = readInputs('input.txt')
     initialState = inputs['Initial state']
     limit = int(input('Enter the initial depth to be searched:'))

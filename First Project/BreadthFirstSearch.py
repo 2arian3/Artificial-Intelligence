@@ -31,7 +31,7 @@ def BreadthFirstSearch(initialNode: Node):
 
 def main():
     #could be used to read input from a text file => inputs = readInputs('input.txt')
-    #in the case below it reads the inputs from terminal
+    #in the case below it reads the inputs from text file
     inputs = readInputs('input.txt')
     initialState = inputs['Initial state']
     result = BreadthFirstSearch(Node(initialState))
