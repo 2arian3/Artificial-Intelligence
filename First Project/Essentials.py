@@ -113,6 +113,14 @@ class Node:
                         break
         return max(h1, h2)
     
+def child(action, childState, currentActions, childDepth):
+    fromColumn, toColumn = action
+    card = childState.columns[fromColumn].removeCardFromTop()
+    childState.columns[toColumn].putCardOnTop(card) 
+    childNode = Node(childState, currentActions, childDepth)
+    childNode.actions.append((str(card), fromColumn, toColumn))
+    return childNode
+
 def readInputs(fileName=None):
     initialState, read, inputFile = State(), input, None
     if fileName: 

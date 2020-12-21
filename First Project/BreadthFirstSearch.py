@@ -12,7 +12,6 @@ def BreadthFirstSearch(initialNode: Node):
     explored: Set[Node] = set()
 
     while frontier:
-
         currentNode: Node = frontier.popleft()
         currentState: State = currentNode.state
         currentActions = currentNode.actions
@@ -23,12 +22,7 @@ def BreadthFirstSearch(initialNode: Node):
         if currentState.checkTermination(): return currentNode
 
         for action in currentState.validActions():
-            fromColumn, toColumn = action
-            childState = deepcopy(currentState)
-            card = childState.columns[fromColumn].removeCardFromTop()
-            childState.columns[toColumn].putCardOnTop(card) 
-            childNode = Node(childState, currentActions, childDepth)
-            childNode.actions.append((str(card), fromColumn, toColumn))
+            childNode = child(action, deepcopy(currentState), currentActions, childDepth)
             if childNode not in explored:
                 frontier.append(childNode)
                 totalCreatedNodes += 1
@@ -38,7 +32,7 @@ def BreadthFirstSearch(initialNode: Node):
 def main():
     #could be used to read input from a text file => inputs = readInputs('input.txt')
     #in the case below it reads the inputs from terminal
-    inputs = readInputs()
+    inputs = readInputs('input.txt')
     initialState = inputs['Initial state']
     result = BreadthFirstSearch(Node(initialState))
     if result != False: showResults(result, initialState, totalCreatedNodes, totalExploredNodes)
