@@ -1,8 +1,7 @@
-from typing import Set
 from Essentials import *
 
-totalExploredNodes = 0
-totalCreatedNodes = 0
+totalExploredNodes = 1
+totalCreatedNodes = 1
 
 def DepthLimitedSearch(currentNode: Node, limit, explored: Set[Node]):
     global totalCreatedNodes, totalExploredNodes
@@ -10,7 +9,7 @@ def DepthLimitedSearch(currentNode: Node, limit, explored: Set[Node]):
     if limit == 0: return 'cutoff'
 
     cutoffOccured = False
-    currentState = currentNode.state
+    currentState: State = currentNode.state
     currentActions = currentNode.actions
     childDepth = currentNode.depth + 1
     explored.add(currentNode)
@@ -21,7 +20,7 @@ def DepthLimitedSearch(currentNode: Node, limit, explored: Set[Node]):
         childState = deepcopy(currentState)
         card = childState.columns[fromColumn].removeCardFromTop()
         childState.columns[toColumn].putCardOnTop(card) 
-        childNode = Node(childState, currentNode, currentActions, childDepth)
+        childNode = Node(childState, currentActions, childDepth)
         childNode.actions.append((str(card), fromColumn, toColumn))
 
         if childNode not in explored:
@@ -29,22 +28,22 @@ def DepthLimitedSearch(currentNode: Node, limit, explored: Set[Node]):
             result = DepthLimitedSearch(childNode, limit-1, explored)
             if result == 'cutoff': cutoffOccured = True
             elif result != 'failure': return result
-        else: continue
 
     return 'cutoff' if cutoffOccured else 'failure'
 
-def IterativeDeepeningSearch(initialState, limit):
+def IterativeDeepeningSearch(initialNode, limit):
     result = 'failure'
     while result == 'failure' or result == 'cutoff':
-        result = DepthLimitedSearch(Node(initialState, depth=0), limit, set())
+        result = DepthLimitedSearch(initialNode, limit, set())
         limit += 1
     return result
 
 def main():
-
-    inputs = readInputs('input.txt')
+    #could be used to read input from a text file => inputs = readInputs('input.txt')
+    #in the case below it reads the inputs from terminal
+    inputs = readInputs()
     initialState = inputs['Initial state']
-    result = IterativeDeepeningSearch(initialState, 0)
+    result = IterativeDeepeningSearch(Node(initialState), 0)
     showResults(result, initialState, totalCreatedNodes, totalExploredNodes)
 
 if __name__ == '__main__':
