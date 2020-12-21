@@ -1,49 +1,43 @@
 from Essentials import *
+from collections import deque
 
-totalExploredNodes = 1
+totalExploredNodes = 0
 totalCreatedNodes = 1
 
-def DepthLimitedSearch(currentNode: Node, limit, explored: Set[Node]):
+def DepthLimitedSearch(initialNode: Node, limit):
     global totalCreatedNodes, totalExploredNodes
-    if currentNode.state.checkTermination(): return currentNode
-    if limit == 0: return 'cutoff'
+    frontier = deque([initialNode])
 
-    cutoffOccured = False
-    currentState: State = currentNode.state
-    currentActions = currentNode.actions
-    childDepth = currentNode.depth + 1
-    explored.add(currentNode)
-    totalExploredNodes += 1
+    while frontier:
+        currentNode: Node = frontier.pop()
+        currentState: State = currentNode.state
+        currentActions = currentNode.actions
+        childDepth = currentNode.depth + 1
+        totalExploredNodes += 1
 
-    for action in currentState.validActions():
-        fromColumn, toColumn = action
-        childState = deepcopy(currentState)
-        card = childState.columns[fromColumn].removeCardFromTop()
-        childState.columns[toColumn].putCardOnTop(card) 
-        childNode = Node(childState, currentActions, childDepth)
-        childNode.actions.append((str(card), fromColumn, toColumn))
-
-        if childNode not in explored:
-            totalCreatedNodes += 1
-            result = DepthLimitedSearch(childNode, limit-1, explored)
-            if result == 'cutoff': cutoffOccured = True
-            elif result != 'failure': return result
-
-    return 'cutoff' if cutoffOccured else 'failure'
+        if currentState.checkTermination(): return currentNode
+        elif currentNode.depth != limit:
+            for action in currentState.validActions():
+                childNode = child(action, deepcopy(currentState), currentActions, childDepth)
+                frontier.append(childNode)
+                totalCreatedNodes += 1
+    
+    return False
 
 def IterativeDeepeningSearch(initialNode, limit):
-    result = 'failure'
-    while result == 'failure' or result == 'cutoff':
-        result = DepthLimitedSearch(initialNode, limit, set())
+    result = False
+    while result is False:
+        result = DepthLimitedSearch(initialNode, limit)
         limit += 1
     return result
 
 def main():
     #could be used to read input from a text file => inputs = readInputs('input.txt')
     #in the case below it reads the inputs from terminal
-    inputs = readInputs()
+    inputs = readInputs('input.txt')
     initialState = inputs['Initial state']
-    result = IterativeDeepeningSearch(Node(initialState), 0)
+    limit = int(input('Enter the initial depth to be searched:'))
+    result = IterativeDeepeningSearch(Node(initialState), limit)
     showResults(result, initialState, totalCreatedNodes, totalExploredNodes)
 
 if __name__ == '__main__':
