@@ -98,20 +98,17 @@ class Node:
         return hash(self.state.columns.__str__())
 
     def heuristic(self):
-        h1, h2 = 0, 0
+        h = 0
         for column in self.state.columns:
             if column.cards:
-                for card in column.cards:
-                    if card != column.cards[0] and card.number >= column.cards[0].number:
-                        h1 += len(column.cards) - column.cards.index(card)
+                temp = column.cards[0].number
+                for card in column.cards[1:]:
+                    #counts the cards that should be moved
+                    if card.color != column.cards[0].color or card.number >= temp:
+                        h += len(column.cards) - column.cards.index(card)
                         break
-        for column in self.state.columns:
-            if column.cards:
-                for card in column.cards:
-                    if card.color != column.cards[0].color:
-                        h2 += len(column.cards) - column.cards.index(card)
-                        break
-        return max(h1, h2)
+                    temp = card.number          
+        return h
     
 def child(action, childState, currentActions, childDepth):
     fromColumn, toColumn = action

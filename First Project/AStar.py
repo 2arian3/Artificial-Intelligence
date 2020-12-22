@@ -9,7 +9,7 @@ def AStar(initialNode: Node):
     currentNode: Node = initialNode
     frontier = PriorityQueue()
     frontier.put((0, id(currentNode), currentNode))
-    costs: Dict[Node, int] = {}
+    costs: Dict[Node: int] = {}
     costs[currentNode] = 0
 
     while frontier:
@@ -24,8 +24,7 @@ def AStar(initialNode: Node):
         for action in currentState.validActions():
             childNode = child(action, deepcopy(currentState), currentActions, childDepth)
             childCost = costs[currentNode] + 1
-
-            if childNode not in costs or childCost < costs[childNode]:
+            if childNode not in costs:
                 costs[childNode] = childCost
                 priority = childCost + childNode.heuristic()
                 frontier.put((priority, id(childNode), childNode))
