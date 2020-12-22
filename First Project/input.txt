@@ -1,6 +1,6 @@
-5 3 5
-5g 5r 4y
-2g 4r 3y 3g 2y 
-1y 4g 1r
-1g 2r 5y 3r
+5 2 5
 #
+1r 5y 3r
+5r 2r
+4y 1y 2y 4r
+3y

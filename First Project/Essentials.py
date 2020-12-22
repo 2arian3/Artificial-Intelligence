@@ -109,7 +109,7 @@ class Node:
             if column.cards:
                 for card in column.cards:
                     if card.color != column.cards[0].color:
-                        h1 += len(column.cards) - column.cards.index(card)
+                        h2 += len(column.cards) - column.cards.index(card)
                         break
         return max(h1, h2)
     
@@ -145,7 +145,7 @@ def readInputs(fileName=None):
         "Initial state": initialState
     }
 
-def showResults(goalNode, initialState, totalCreatedNodes, totalExploredNodes):
+def showResults(goalNode: Node, initialState: State, totalCreatedNodes, totalExploredNodes):
     print('***RESULTS***')
     print('Total created nodes: ', totalCreatedNodes)
     print('Total explored nodes: ', totalExploredNodes)
@@ -156,3 +156,5 @@ def showResults(goalNode, initialState, totalCreatedNodes, totalExploredNodes):
     print('***Actions***')
     for card, fromColumn, toColumn in goalNode.actions:
         print('Moved card {} from columns {} to column {}'.format(card, fromColumn+1, toColumn+1))
+        initialState.columns[toColumn].putCardOnTop(initialState.columns[fromColumn].removeCardFromTop())
+        print(initialState.columns, '\n')
