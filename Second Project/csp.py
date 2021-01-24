@@ -2,8 +2,6 @@ from essentials import *
 from copy import deepcopy
 from abc import abstractmethod
 
-count = 0
-
 class CSP:
     
     def __init__(self, colorOrNumber, variables, domains):
@@ -25,14 +23,26 @@ class CSP:
         return True
 
     def minimumRemainingValue(self, domains, unassigned):
-        result = unassigned[0]
-        for variable in unassigned:
-            if len(domains[variable]) < len(domains[result]):
-                result = variable
-        return result
+        remainingValues = dict(zip(unassigned, list(map(lambda variable: len(domains[variable]), unassigned))))
+        remainingValues = dict(sorted(remainingValues.items(), key= lambda item: item[1]))
+        count = list(remainingValues.values()).count(list(remainingValues.values())[0])
+        return count, list(remainingValues.keys())[0]
+
 
     def degree(self, unassigned):
-        ...
+        degrees = dict()
+        for variable in unassigned:
+            count = 0
+            for constraint in self.constraints[variable]:
+                count += 1 if any([defectiveVariable in unassigned for defectiveVariable in constraint.variables if defectiveVariable != variable]) else 0
+            degrees[variable] = count
+        degrees = dict(sorted(degrees.items(), key= lambda item: item[1]))
+        count = list(degrees.values()).count(list(degrees.values())[-1])
+        print(degrees)
+        return count, list(degrees.keys())[-1]
+
+    def selectVariable(self, domains, unassigned):
+        pass
 
     def forwardChecking(self, variable, domains, assignments):
         tempDomains = deepcopy(domains)
@@ -53,11 +63,7 @@ class CSP:
         if len(assignments[self.colorOrNumber]) == len(self.variables):
             return assignments
         unassigned = [variable for variable in self.variables if variable not in assignments[self.colorOrNumber]]
-        # variable = unassigned[0]
-        global count
-        count += 1
         variable = self.minimumRemainingValue(domains, unassigned)
-        print(variable, domains)
         for value in domains[variable]:
             tempAssignments = deepcopy(assignments)
             tempAssignments[self.colorOrNumber][variable] = value
@@ -147,27 +153,35 @@ def main():
     numberCSP = CSP('number', variables, numberDomains)
 
     legalMoves = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    covered = []
     for i in range(n):
         for j in range(n):
             currentCell = (i, j)
             neighbours = [(i+x, j+y) for x, y in legalMoves if 0 <= i+x < n and 0 <= j+y < n]
-            for neighbour in neighbours: 
-                colorCSP.addConstraint(DifferentColorConstraint(currentCell, neighbour))
-                colorCSP.addConstraint(PriorityColorConstraint(currentCell, neighbour))
-                numberCSP.addConstraint(PriorityColorConstraint(currentCell, neighbour))
+            for neighbour in neighbours:
+                if {neighbour, currentCell} not in covered: 
+                    colorCSP.addConstraint(DifferentColorConstraint(currentCell, neighbour))
+                    colorCSP.addConstraint(PriorityColorConstraint(currentCell, neighbour))
+                    numberCSP.addConstraint(PriorityColorConstraint(currentCell, neighbour))
+                    covered.append({neighbour, currentCell})
     
+    covered = []
     for i in range(n):
         columnCells = []
         lineCells = []
         for j in range(n):
             columnCells.append((j, i))
             lineCells.append((i, j))
-        numberCSP.addConstraint(DifferentNumberConstraint(columnCells))
-        numberCSP.addConstraint(DifferentNumberConstraint(lineCells))
+        if set(columnCells) not in covered:
+            numberCSP.addConstraint(DifferentNumberConstraint(columnCells))
+            covered.append(set(columnCells))
+        if set(lineCells) not in covered:
+            numberCSP.addConstraint(DifferentNumberConstraint(lineCells))
+            covered.append(set(lineCells))
 
     assignments = numberCSP.backtrack(numberDomains, assignments)
     assignments = colorCSP.backtrack(colorDomains, assignments)
-    print(assignments, count)
+    print(assignments)
 
 if __name__ == '__main__':
     main()
