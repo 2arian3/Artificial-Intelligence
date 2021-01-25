@@ -38,11 +38,14 @@ class CSP:
             degrees[variable] = count
         degrees = dict(sorted(degrees.items(), key= lambda item: item[1]))
         count = list(degrees.values()).count(list(degrees.values())[-1])
-        print(degrees)
         return count, list(degrees.keys())[-1]
 
     def selectVariable(self, domains, unassigned):
-        pass
+        mrvCount, mrvVariable = self.minimumRemainingValue(domains, unassigned)
+        degreeCount, degreeVariable = self.degree(unassigned)
+        if mrvCount < degreeCount:
+            return mrvVariable
+        return degreeVariable
 
     def forwardChecking(self, variable, domains, assignments):
         tempDomains = deepcopy(domains)
@@ -54,8 +57,6 @@ class CSP:
                     for value in tempDomains[defectiveVariable]:
                         tempAssignments[self.colorOrNumber][defectiveVariable] = value
                         if constraint.satisfied(tempAssignments): temp.append(value)
-                    if len(temp) == 0:
-                        return False
                     tempDomains[defectiveVariable] = temp
         return tempDomains
 
@@ -63,14 +64,13 @@ class CSP:
         if len(assignments[self.colorOrNumber]) == len(self.variables):
             return assignments
         unassigned = [variable for variable in self.variables if variable not in assignments[self.colorOrNumber]]
-        variable = self.minimumRemainingValue(domains, unassigned)
+        variable = self.selectVariable(domains, unassigned)
         for value in domains[variable]:
             tempAssignments = deepcopy(assignments)
             tempAssignments[self.colorOrNumber][variable] = value
 
             if self.consistent(variable, tempAssignments):
                 tempDomains = self.forwardChecking(variable, domains, tempAssignments)
-                if tempDomains == False: return False
                 result = self.backtrack(tempDomains, tempAssignments)
                 if result != False:
                     return result
