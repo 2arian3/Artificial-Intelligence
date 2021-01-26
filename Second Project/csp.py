@@ -4,8 +4,7 @@ from abc import abstractmethod
 
 class CSP:
     
-    def __init__(self, colorOrNumber, variables, domains):
-        self.colorOrNumber = colorOrNumber
+    def __init__(self, variables, domains):
         self.variables = variables
         self.domains = domains
         self.constraints = {}
@@ -16,9 +15,9 @@ class CSP:
         for variable in constraint.variables:
             self.constraints[variable].append(constraint)
 
-    def consistent(self, variable, assignment):
+    def consistent(self, variable, assignments):
         for constraint in self.constraints[variable]:
-            if not constraint.satisfied(assignment):
+            if not constraint.satisfied(assignments):
                 return False
         return True
 
@@ -41,39 +40,38 @@ class CSP:
         return count, list(degrees.keys())[-1]
 
     def selectVariable(self, domains, unassigned):
-        mrvCount, mrvVariable = self.minimumRemainingValue(domains, unassigned)
-        degreeCount, degreeVariable = self.degree(unassigned)
-        if mrvCount < degreeCount:
-            return mrvVariable
-        return degreeVariable
+        ...
 
-    def forwardChecking(self, variable, domains, assignments):
+    def forwardChecking(self, toBeAssigned, variable, domains, assignments):
         tempDomains = deepcopy(domains)
         for constraint in self.constraints[variable]:
             for defectiveVariable in constraint.variables:
-                if defectiveVariable != variable and defectiveVariable not in assignments[self.colorOrNumber]:
+                if defectiveVariable != variable and toBeAssigned not in assignments[defectiveVariable]:
                     temp = []
                     tempAssignments = deepcopy(assignments)
-                    for value in tempDomains[defectiveVariable]:
-                        tempAssignments[self.colorOrNumber][defectiveVariable] = value
+                    for value in tempDomains[defectiveVariable][toBeAssigned]:
+                        tempAssignments[defectiveVariable][toBeAssigned] = value
                         if constraint.satisfied(tempAssignments): temp.append(value)
-                    tempDomains[defectiveVariable] = temp
+                    if len(temp) == 0: return False
+                    tempDomains[defectiveVariable][toBeAssigned] = temp
         return tempDomains
 
     def backtrack(self, domains, assignments):
-        if len(assignments[self.colorOrNumber]) == len(self.variables):
+        if all([len(assignment) == 2 for assignment in list(assignments.values())]):
             return assignments
-        unassigned = [variable for variable in self.variables if variable not in assignments[self.colorOrNumber]]
-        variable = self.selectVariable(domains, unassigned)
-        for value in domains[variable]:
+        unassigned = [variable for variable in self.variables if 'color' not in assignments[variable] or 'number' not in assignments[variable]]
+        variable = unassigned[0]
+        toBeAssigned = 'number' if 'number' not in assignments[variable] else 'color'
+        for value in domains[variable][toBeAssigned]:
             tempAssignments = deepcopy(assignments)
-            tempAssignments[self.colorOrNumber][variable] = value
+            tempAssignments[variable][toBeAssigned] = value
 
             if self.consistent(variable, tempAssignments):
-                tempDomains = self.forwardChecking(variable, domains, tempAssignments)
-                result = self.backtrack(tempDomains, tempAssignments)
-                if result != False:
-                    return result
+                tempDomains = self.forwardChecking(toBeAssigned, variable, domains, tempAssignments)
+                if tempDomains:
+                    result = self.backtrack(tempDomains, tempAssignments)
+                    if result != False:
+                        return result
         return False
 
 class Constraint:
@@ -93,9 +91,9 @@ class DifferentColorConstraint(Constraint):
         self.cell2 = cell2
     
     def satisfied(self, assignments):
-        if self.cell1 not in assignments['color'] or self.cell2 not in assignments['color']:
+        if 'color' not in assignments[self.cell1] or 'color' not in assignments[self.cell2]:
             return True
-        return assignments['color'][self.cell1] != assignments['color'][self.cell2]
+        return assignments[self.cell1]['color'] != assignments[self.cell2]['color']
 
 class DifferentNumberConstraint(Constraint):
 
@@ -103,7 +101,7 @@ class DifferentNumberConstraint(Constraint):
         super().__init__(cells)
     
     def satisfied(self, assignments):
-        numberAssignments = [assignments['number'][variable] for variable in self.variables if variable in assignments['number']]
+        numberAssignments = [assignments[variable]['number'] for variable in self.variables if 'number' in assignments[variable]]
         return len(numberAssignments) == len(set(numberAssignments))
 
 class PriorityColorConstraint(Constraint):
@@ -118,12 +116,12 @@ class PriorityColorConstraint(Constraint):
         self.cell2 = cell2
 
     def satisfied(self, assignments):
-        if self.cell1 not in assignments['color'] or self.cell2 not in assignments['color'] or self.cell1 not in assignments['number'] or self.cell2 not in assignments['number']:
+        if 'color' not in assignments[self.cell1] or 'color' not in assignments[self.cell2] or 'number' not in assignments[self.cell1] or 'number' not in assignments[self.cell2]:
             return True
-        cell1Color = assignments['color'][self.cell1]
-        cell2Color = assignments['color'][self.cell2]
-        cell1Number = assignments['number'][self.cell1]
-        cell2Number = assignments['number'][self.cell2]
+        cell1Color = assignments[self.cell1]['color']
+        cell2Color = assignments[self.cell2]['color']
+        cell1Number = assignments[self.cell1]['number']
+        cell2Number = assignments[self.cell2]['number']
         return ((PriorityColorConstraint.colors.index(cell1Color) < PriorityColorConstraint.colors.index(cell2Color) and cell1Number > cell2Number)
                 or (PriorityColorConstraint.colors.index(cell1Color) > PriorityColorConstraint.colors.index(cell2Color) and cell1Number < cell2Number))
 
@@ -135,22 +133,19 @@ def main():
 
     PriorityColorConstraint.colors = colors
     assignments = {}
-    assignments['color'] = dict()
-    assignments['number'] = dict()
     '''Calculating initial assignments'''
     for position, cell in board.items():
-        if cell.number != '*': assignments['number'][position] = cell.number
-        if cell.color != '#': assignments['color'][position] = cell.color
+        assignments[position] = {}
+        if cell.number != '*': assignments[position]['number'] = cell.number
+        if cell.color != '#': assignments[position]['color'] = cell.color
     variables = [(i, j) for i in range(n) for j in range(n)]
-    colorDomains = dict()
-    numberDomains = dict()
+    domains = {}
     for variable in variables: 
-        numberDomains[variable] = [number for number in range(1, n+1) if variable not in assignments['number']]
-    for variable in variables: 
-        colorDomains[variable] = [color for color in colors if variable not in assignments['color']]
+        domains[variable] = {} 
+        domains[variable]['number'] = [number for number in range(1, n+1) if variable not in assignments or 'number' not in assignments[variable]]
+        domains[variable]['color'] = [color for color in colors if variable not in assignments or 'color' not in assignments[variable]]
     
-    colorCSP = CSP('color', variables, colorDomains)
-    numberCSP = CSP('number', variables, numberDomains)
+    csp = CSP(variables, domains)
 
     legalMoves = [(-1, 0), (1, 0), (0, -1), (0, 1)]
     covered = []
@@ -160,9 +155,8 @@ def main():
             neighbours = [(i+x, j+y) for x, y in legalMoves if 0 <= i+x < n and 0 <= j+y < n]
             for neighbour in neighbours:
                 if {neighbour, currentCell} not in covered: 
-                    colorCSP.addConstraint(DifferentColorConstraint(currentCell, neighbour))
-                    colorCSP.addConstraint(PriorityColorConstraint(currentCell, neighbour))
-                    numberCSP.addConstraint(PriorityColorConstraint(currentCell, neighbour))
+                    csp.addConstraint(DifferentColorConstraint(currentCell, neighbour))
+                    csp.addConstraint(PriorityColorConstraint(currentCell, neighbour))
                     covered.append({neighbour, currentCell})
     
     covered = []
@@ -173,15 +167,16 @@ def main():
             columnCells.append((j, i))
             lineCells.append((i, j))
         if set(columnCells) not in covered:
-            numberCSP.addConstraint(DifferentNumberConstraint(columnCells))
+            csp.addConstraint(DifferentNumberConstraint(columnCells))
             covered.append(set(columnCells))
         if set(lineCells) not in covered:
-            numberCSP.addConstraint(DifferentNumberConstraint(lineCells))
+            csp.addConstraint(DifferentNumberConstraint(lineCells))
             covered.append(set(lineCells))
-
-    assignments = numberCSP.backtrack(numberDomains, assignments)
-    assignments = colorCSP.backtrack(colorDomains, assignments)
-    print(assignments)
+    assignments = csp.backtrack(domains, assignments)
+    for i in range(n):
+        for j in range(n):
+            print(str(assignments[(i, j)]['number']) + assignments[(i, j)]['color'], end=' ')
+        print()
 
 if __name__ == '__main__':
     main()
