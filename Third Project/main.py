@@ -6,7 +6,10 @@ dictionary = defaultdict(lambda: defaultdict())
 models = defaultdict(lambda: defaultdict(lambda: defaultdict()))
 directories = {'molavi': 'AI_P3/train_set/molavi_train.txt',
                'hafez': 'AI_P3/train_set/hafez_train.txt',
-               'ferdowsi': 'AI_P3/train_set/ferdowsi_train.txt'}
+               'ferdowsi': 'AI_P3/train_set/ferdowsi_train.txt',
+               'test': 'AI_P3/test_set/test_file.txt'}
+lambdas = [0.01, 0.9, 0.09]
+epsilon = 0.1
 
 def creatingDictionary(poet):
     poetDict = defaultdict(lambda: 0)
@@ -57,6 +60,50 @@ def learn(poet):
 
     return probabilityOfUnigram, probabilityOfBigram
 
+def readTestFile():
+    with open(directories['test'], 'r', encoding='UTF-8') as src:
+        lines = src.readlines()
+
+    return {line.split('\t')[1].rstrip(): line[0] for line in lines}
+
+def backOff(words, poet):
+    bigram = models[poet]['bigram'][words] if words in models[poet]['bigram'] else 0
+    unigram = models[poet]['unigram'][words[0]] if words[0] in models[poet]['unigram'] else 0
+    return lambdas[0] * bigram + lambdas[1] * unigram + lambdas[2] * epsilon
+
+def randomLambdas():
+    import random
+    lambdas = [random.random() for _ in range(3)]
+    return [l / sum(lambdas) for l in lambdas]
+
+def test():
+    testLines = readTestFile()
+    poetMapping = {'1': 'ferdowsi',
+                   '2': 'hafez',
+                   '3': 'molavi'}
+
+    correctPredicts = 0
+    for line, truePoet in testLines.items():
+        bigrams = []
+        words = line.split()
+        for i in range(len(words) - 2):
+            bigrams.append((words[i], words[i+1]))
+
+        maxProbability = -1
+        predictedPoet = None
+        for poet in poets:
+            temp = 1
+            for bigram in bigrams:
+                temp *= backOff(bigram, poet)
+            if temp > maxProbability:
+                maxProbability = temp
+                predictedPoet = poet
+
+        print('Predicted {} for line {}. Correct poet is {}.'.format(predictedPoet, line, poetMapping[truePoet]))
+        if predictedPoet == poetMapping[truePoet]:
+            correctPredicts += 1
+
 for poet in poets:
     dictionary[poet] = creatingDictionary(poet)
     models[poet]['unigram'], models[poet]['bigram'] = learn(poet)
+test()
