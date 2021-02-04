@@ -32,17 +32,16 @@ def main():
     colors = inputs['colors']
     assignments = inputs['assignments']
 
-    ColorConstraint.colors = colors
-    variables = [(i, j) for i in range(n) for j in range(n)]
-    domains = {}
+    ColorConstraint.colors = dict(zip(colors, range(len(colors), 0, -1)))
+    variables = {(i, j) for i in range(n) for j in range(n)}
+    domains = defaultdict(lambda: defaultdict())
     for variable in variables: 
-        domains[variable] = {} 
-        domains[variable]['number'] = [number for number in range(1, n+1) if variable not in assignments or 'number' not in assignments[variable]]
-        domains[variable]['color'] = [color for color in colors if variable not in assignments or 'color' not in assignments[variable]]
+        domains[variable]['number'] = {number for number in range(1, n+1) if variable not in assignments or 'number' not in assignments[variable]}
+        domains[variable]['color'] ={color for color in colors if variable not in assignments or 'color' not in assignments[variable]}
     
     csp = CSP(variables, domains)
 
-    legalMoves = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    legalMoves = {(-1, 0), (1, 0), (0, -1), (0, 1)}
     covered = []
     for i in range(n):
         for j in range(n):
@@ -53,18 +52,14 @@ def main():
                     csp.addConstraint(ColorConstraint(currentCell, neighbour))
                     covered.append({neighbour, currentCell})
     
-    covered = []
     for i in range(n):
-        columnCells, lineCells = [], []
+        columnCells, lineCells = set(), set()
         for j in range(n):
-            columnCells.append((j, i))
-            lineCells.append((i, j))
-        if set(columnCells) not in covered:
-            csp.addConstraint(NumberConstraint(columnCells))
-            covered.append(set(columnCells))
-        if set(lineCells) not in covered:
-            csp.addConstraint(NumberConstraint(lineCells))
-            covered.append(set(lineCells))
+            columnCells.add((j, i))
+            lineCells.add((i, j))
+        csp.addConstraint(NumberConstraint(columnCells))
+        csp.addConstraint(NumberConstraint(lineCells))
+
     for variable in assignments:
         if 'color' in assignments[variable]:
             domains = csp.forwardChecking('color', variable, domains, assignments)
@@ -73,7 +68,7 @@ def main():
 
     assignments = csp.backtrack(domains, assignments)
     
-    if assignments == False:
+    if not assignments:
         print('ERROR\nThere is NO possible assignment based on the given table...')
         return
     
