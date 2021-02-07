@@ -1,5 +1,6 @@
 import re
 from collections import defaultdict
+from typing import List
 
 poets = ['molavi', 'hafez', 'ferdowsi']
 dictionary = defaultdict(lambda: defaultdict())
@@ -8,24 +9,37 @@ directories = {'molavi': 'AI_P3/train_set/molavi_train.txt',
                'hafez': 'AI_P3/train_set/hafez_train.txt',
                'ferdowsi': 'AI_P3/train_set/ferdowsi_train.txt',
                'test': 'AI_P3/test_set/test_file.txt'}
-lambdas = [0.01, 0.9, 0.09]
-epsilon = 0.1
+lambdas = [0.1, 0.2, 0.7]
+epsilon = 0.0001
 
-def creatingDictionary(poet):
-    poetDict = defaultdict(lambda: 0)
-    with open(directories[poet], 'r', encoding='UTF-8') as src:
-        line = src.readline().rstrip()
-        while line:
-            for word in line.split(' '):
-                poetDict[word.rstrip()] += 1
-            line = src.readline()
-    return {word: count for word, count in poetDict.items() if count != 1}
-
-def getTrainLines(poet):
-    with open(directories[poet], 'r', encoding='UTF-8') as src:
+'''
+Returns the given text file's lines
+'''
+def readFile(directory):
+    with open(directory, 'r', encoding='UTF-8') as src:
         lines = src.readlines()
     
-    lines = list(map(lambda line: line.rstrip(), lines))
+    return list(map(lambda line: line.rstrip(), lines))
+
+
+'''
+Creating dictionary for each poet based on their train set
+'''
+def creatingDictionary(poet):
+    poetDict = defaultdict(lambda: 0)
+    lines = readFile(directories[poet])
+    for line in lines:
+        for word in line.split(' '):
+            poetDict[word.rstrip()] += 1
+    return {word: count for word, count in poetDict.items() if count != 1}
+
+'''
+Returns the formatted lines for learning
+Replaces the unknown words with <unk> token
+Adds <s> and </s> to the start and end of each line
+'''
+def getTrainLines(poet):
+    lines = readFile(directories[poet])
     
     for i in range(len(lines)):
         for word in lines[i].split():
@@ -35,21 +49,30 @@ def getTrainLines(poet):
     lines = ['<s> ' + line + ' </s>' for line in lines]
     return lines
 
-def uniGram(lines):
+'''
+Computing the unigrams and their repeatance
+'''
+def uniGram(lines: List):
     unigram = defaultdict(lambda: 0)
     for line in lines:
         for word in line.split():
             unigram[word] += 1
     return unigram
 
-def biGram(lines):
+'''
+Computing the bigrams and their repeatance
+'''
+def biGram(lines: List):
     bigram = defaultdict(lambda: 0)
     for line in lines:
         words = line.split()
-        for i in range(len(words) - 2):
+        for i in range(len(words) - 1):
             bigram[(words[i], words[i+1])] += 1
     return bigram
 
+'''
+Computing the probabilities of unigrams and bigrams
+'''
 def learn(poet):
     lines = getTrainLines(poet)
     unigram = uniGram(lines)
@@ -60,12 +83,16 @@ def learn(poet):
 
     return probabilityOfUnigram, probabilityOfBigram
 
-def readTestFile():
-    with open(directories['test'], 'r', encoding='UTF-8') as src:
-        lines = src.readlines()
+'''
+Reading and formatting the test set
+'''
+def getTestLines():
+    lines = readFile(directories['test'])
+    return {'<s> ' + line.split('\t')[1].rstrip() + ' </s>': line[0] for line in lines}
 
-    return {line.split('\t')[1].rstrip(): line[0] for line in lines}
-
+'''
+Using backoff smoothing method
+'''
 def backOff(words, poet):
     bigram = models[poet]['bigram'][words] if words in models[poet]['bigram'] else 0
     unigram = models[poet]['unigram'][words[0]] if words[0] in models[poet]['unigram'] else 0
@@ -76,17 +103,21 @@ def randomLambdas():
     lambdas = [random.random() for _ in range(3)]
     return [l / sum(lambdas) for l in lambdas]
 
+'''
+Computations on test set to find best matches
+'''
 def test():
-    testLines = readTestFile()
+    testLines = getTestLines()
     poetMapping = {'1': 'ferdowsi',
                    '2': 'hafez',
                    '3': 'molavi'}
 
-    correctPredicts = 0
+    correctPredictions = defaultdict(lambda: 0)
+
     for line, truePoet in testLines.items():
         bigrams = []
         words = line.split()
-        for i in range(len(words) - 2):
+        for i in range(len(words) - 1):
             bigrams.append((words[i], words[i+1]))
 
         maxProbability = -1
@@ -99,11 +130,20 @@ def test():
                 maxProbability = temp
                 predictedPoet = poet
 
-        print('Predicted {} for line {}. Correct poet is {}.'.format(predictedPoet, line, poetMapping[truePoet]))
         if predictedPoet == poetMapping[truePoet]:
-            correctPredicts += 1
+            correctPredictions[poetMapping[truePoet]] += 1
+    return correctPredictions
+
+def findLambdas(iteration=1):
+    global lambdas
+    counter = 0
+    for _ in range(iteration):
+        lambdas = randomLambdas()
+        counter = max(test(), counter)
+
+    return counter
 
 for poet in poets:
     dictionary[poet] = creatingDictionary(poet)
     models[poet]['unigram'], models[poet]['bigram'] = learn(poet)
-test()
+print(test())
