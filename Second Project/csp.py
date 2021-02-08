@@ -7,6 +7,7 @@ from collections import defaultdict
 '''
 CSP class implemented to solve colorized sudoku.
 '''
+totalAssignments = []
 class CSP:
     
     def __init__(self, variables: Set[Tuple], domains: Dict[Tuple, Dict]):
@@ -59,9 +60,7 @@ class CSP:
     def selectVariable(self, domains: Dict[Tuple, Dict], assignments: Dict[Tuple, Dict]):
         unassigned = {variable for variable in self.variables if len(assignments[variable]) != 2}
         mrv = self.minimumRemainingValue(domains, assignments, unassigned)
-        if len(mrv) == 1:
-            return mrv[0]
-        return self.degree(assignments, set(mrv))[0]
+        return mrv[0] if len(mrv) == 1 else self.degree(assignments, set(mrv))[0]
 
     '''
     Updating unassigned variable domains based on 
@@ -92,8 +91,10 @@ class CSP:
         variable = self.selectVariable(domains, assignments)
         toBeAssigned = 'number' if 'number' not in assignments[variable] else 'color'
         for value in domains[variable][toBeAssigned]:
+            global totalAssignments
             tempAssignments = deepcopy(assignments)
             tempAssignments[variable][toBeAssigned] = value
+            totalAssignments.append(tempAssignments)
             if self.consistent(variable, tempAssignments):
                 tempDomains = self.forwardChecking(toBeAssigned, variable, domains, tempAssignments)
                 if tempDomains:

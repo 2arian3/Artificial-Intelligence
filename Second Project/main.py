@@ -1,3 +1,4 @@
+from graphics import visualize
 from csp import * 
 
 def readInputs(fileName=None):
@@ -25,6 +26,16 @@ def readInputs(fileName=None):
         'colors': colors,
         'assignments': assignments
     }
+
+def showStatus(n, assignments):
+    if not assignments:
+        print('ERROR\nThere is NO possible assignment based on the given table...')
+        return
+    
+    for i in range(n):
+        for j in range(n):
+            print(str(assignments[(i, j)]['number']) + assignments[(i, j)]['color'], end=' ')
+        print()
 
 def main():
     inputs = readInputs('input.txt')
@@ -60,22 +71,9 @@ def main():
         csp.addConstraint(NumberConstraint(columnCells))
         csp.addConstraint(NumberConstraint(lineCells))
 
-    for variable in assignments:
-        if 'color' in assignments[variable]:
-            domains = csp.forwardChecking('color', variable, domains, assignments)
-        if 'number' in assignments[variable]:
-            domains = csp.forwardChecking('number', variable, domains, assignments)
-
     assignments = csp.backtrack(domains, assignments)
-    
-    if not assignments:
-        print('ERROR\nThere is NO possible assignment based on the given table...')
-        return
-    
-    for i in range(n):
-        for j in range(n):
-            print(str(assignments[(i, j)]['number']) + assignments[(i, j)]['color'], end=' ')
-        print()
+    showStatus(n, assignments)
+    visualize(n, colors, totalAssignments) 
 
 if __name__ == '__main__':
     main()
