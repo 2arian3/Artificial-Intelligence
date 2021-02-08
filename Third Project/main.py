@@ -1,4 +1,3 @@
-import re
 from collections import defaultdict
 from typing import List
 
@@ -9,8 +8,8 @@ directories = {'molavi': 'AI_P3/train_set/molavi_train.txt',
                'hafez': 'AI_P3/train_set/hafez_train.txt',
                'ferdowsi': 'AI_P3/train_set/ferdowsi_train.txt',
                'test': 'AI_P3/test_set/test_file.txt'}
-lambdas = [0.1, 0.2, 0.7]
-epsilon = 0.0001
+lambdas = [0.27143027132734326, 0.1487780559518773, 0.5797916727207794]
+epsilon = 0.001
 
 '''
 Returns the given text file's lines
@@ -21,7 +20,6 @@ def readFile(directory):
     
     return list(map(lambda line: line.rstrip(), lines))
 
-
 '''
 Creating dictionary for each poet based on their train set
 '''
@@ -31,7 +29,7 @@ def creatingDictionary(poet):
     for line in lines:
         for word in line.split(' '):
             poetDict[word.rstrip()] += 1
-    return {word: count for word, count in poetDict.items() if count != 1}
+    return {word: count for word, count in poetDict.items() if count > 1}
 
 '''
 Returns the formatted lines for learning
@@ -42,10 +40,14 @@ def getTrainLines(poet):
     lines = readFile(directories[poet])
     
     for i in range(len(lines)):
+        newLine = []
         for word in lines[i].split():
-            if word not in dictionary[poet]:
-                lines[i] = re.sub(word, '<unk>', lines[i])
-    
+            if word in dictionary[poet]:
+                newLine.append(word)
+            else:
+                newLine.append('<unk>')
+        lines[i] = ' '.join(newLine)
+
     lines = ['<s> ' + line + ' </s>' for line in lines]
     return lines
 
@@ -88,16 +90,19 @@ Reading and formatting the test set
 '''
 def getTestLines():
     lines = readFile(directories['test'])
-    return {'<s> ' + line.split('\t')[1].rstrip() + ' </s>': line[0] for line in lines}
+    return {'<s> ' + line.split('\t')[1] + ' </s>': line[0] for line in lines}
 
 '''
 Using backoff smoothing method
 '''
 def backOff(words, poet):
-    bigram = models[poet]['bigram'][words] if words in models[poet]['bigram'] else 0
-    unigram = models[poet]['unigram'][words[0]] if words[0] in models[poet]['unigram'] else 0
-    return lambdas[0] * bigram + lambdas[1] * unigram + lambdas[2] * epsilon
+    bigram = models[poet]['bigram'].get(words, 0)
+    unigram = models[poet]['unigram'].get(words[1], 0)
+    return lambdas[2] * bigram + lambdas[1] * unigram + lambdas[0] * epsilon
 
+'''
+Used to find the best lambdas
+'''
 def randomLambdas():
     import random
     lambdas = [random.random() for _ in range(3)]
@@ -112,7 +117,7 @@ def test():
                    '2': 'hafez',
                    '3': 'molavi'}
 
-    correctPredictions = defaultdict(lambda: 0)
+    correctPredictions = 0
 
     for line, truePoet in testLines.items():
         bigrams = []
@@ -131,19 +136,38 @@ def test():
                 predictedPoet = poet
 
         if predictedPoet == poetMapping[truePoet]:
-            correctPredictions[poetMapping[truePoet]] += 1
-    return correctPredictions
+            correctPredictions += 1
+    return correctPredictions, len(testLines)
 
+'''
+Learning lambdas
+'''
 def findLambdas(iteration=1):
     global lambdas
     counter = 0
+    bestLambdas = lambdas
     for _ in range(iteration):
         lambdas = randomLambdas()
-        counter = max(test(), counter)
+        temp, _ = test()
+        if temp > counter:
+            counter = temp
+            bestLambdas = lambdas
 
-    return counter
+    return counter, bestLambdas
 
-for poet in poets:
-    dictionary[poet] = creatingDictionary(poet)
-    models[poet]['unigram'], models[poet]['bigram'] = learn(poet)
-print(test())
+def showStatus(correctPredictions, totalLines):
+    print('***STATUS***')
+    print('Total test lines:', totalLines)
+    print('Total correct predictions:', correctPredictions)
+    print('Accuracy:', correctPredictions * 100 / totalLines, '%')
+    print('ƛ1 = {}, ƛ2 = {}, ƛ3 = {}, ε = {}'.format(lambdas[0], lambdas[1], lambdas[2], epsilon))
+
+def main():
+    for poet in poets:
+        dictionary[poet] = creatingDictionary(poet)
+        models[poet]['unigram'], models[poet]['bigram'] = learn(poet)
+    status = test()
+    showStatus(status[0], status[1])
+
+if __name__ == '__main__':
+    main()
