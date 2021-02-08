@@ -1,6 +1,10 @@
 from graphics import visualize
 from csp import * 
 
+'''
+Reads the inputs from the given file or the terminal 
+if no directory is given.
+'''
 def readInputs(fileName=None):
     read, inputFile = input, None
     if fileName: 
@@ -28,6 +32,7 @@ def readInputs(fileName=None):
     }
 
 def showStatus(n, assignments):
+    print('***STATUS***')
     if not assignments:
         print('ERROR\nThere is NO possible assignment based on the given table...')
         return
@@ -38,7 +43,8 @@ def showStatus(n, assignments):
         print()
 
 def main():
-    inputs = readInputs('input.txt')
+    #inputs = readInputs('input.txt') if we want to read from text file.
+    inputs = readInputs()
     n = inputs['n']
     colors = inputs['colors']
     assignments = inputs['assignments']
