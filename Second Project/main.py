@@ -77,6 +77,12 @@ def main():
         csp.addConstraint(NumberConstraint(columnCells))
         csp.addConstraint(NumberConstraint(lineCells))
 
+    for variable in assignments:
+        if 'color' in assignments[variable]:
+            domains = csp.forwardChecking('color', variable, domains, assignments)
+        if 'number' in assignments[variable]:
+            domains = csp.forwardChecking('number', variable, domains, assignments)
+
     assignments = csp.backtrack(domains, assignments)
     showStatus(n, assignments)
     visualize(n, colors, totalAssignments) 
